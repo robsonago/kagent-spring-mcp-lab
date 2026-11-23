@@ -15,7 +15,7 @@ public class ServiceCatalogApplication {
         SpringApplication.run(ServiceCatalogApplication.class, args);
     }
 
-    /** Relógio injetável: facilita testar a regra de congelamento de mudanças. */
+    /** Relógio injetável, facilita testar a regra de congelamento de mudanças. */
     @Bean
     Clock clock() {
         return Clock.systemDefaultZone();

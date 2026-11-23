@@ -13,7 +13,7 @@ import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
 /**
- * Adaptador MCP: cada método vira uma tool descoberta pelo kagent via tools/list.
+ * Adaptador MCP, cada método vira uma tool descoberta pelo kagent via tools/list.
  * As descrições são o "contrato" que o LLM lê para decidir quando chamar cada tool,
  * então trate-as como documentação de API.
  *

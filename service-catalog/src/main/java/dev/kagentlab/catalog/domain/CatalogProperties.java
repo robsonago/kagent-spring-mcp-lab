@@ -39,7 +39,7 @@ public record CatalogProperties(List<ServiceEntry> services, List<ChangeFreeze> 
         }
     }
 
-    /** Janela de congelamento; datas no formato ISO (yyyy-MM-dd), inclusivas. */
+    /** Janela de congelamento, datas no formato ISO (yyyy-MM-dd), inclusivas. */
     public record ChangeFreeze(String name, String start, String end, String reason) {
     }
 }
