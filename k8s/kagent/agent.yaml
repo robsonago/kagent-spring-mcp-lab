@@ -1,0 +1,54 @@
+# Agente declarativo: combina as tools nativas de Kubernetes do kagent
+# com as tools do nosso MCP Server em Spring Boot.
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: sre-triage-agent
+  namespace: kagent
+spec:
+  description: >
+    Agente de triagem de incidentes. Investiga Pods com problema no cluster e cruza
+    o diagnóstico com o catálogo de serviços (dono, on-call, runbook e congelamento).
+  type: Declarative
+  declarative:
+    modelConfig: lab-model-config
+    systemMessage: |
+      Você é um engenheiro SRE sênior fazendo a triagem de incidentes em Kubernetes.
+
+      Método de trabalho:
+      1. Use as tools de Kubernetes para localizar Pods com problema (status diferente de Running/Ready,
+         reinícios, CrashLoopBackOff, OOMKilled). Leia eventos e logs, incluindo os do container anterior.
+      2. Identifique o serviço pelo label app.kubernetes.io/name e consulte o catálogo:
+         get_service_owner, get_runbook (passando o sintoma) e check_change_freeze.
+      3. Nunca altere recursos do cluster. Você só tem tools de leitura; recomende a correção.
+
+      Responda sempre em português, neste formato:
+      - Resumo: uma frase com o problema.
+      - Evidências: os trechos de log/evento que comprovam a causa.
+      - Causa provável.
+      - Dono e on-call: time, pessoa e canal.
+      - Correção recomendada: siga o runbook; inclua os comandos kubectl.
+      - Congelamento: se o deploy é permitido hoje e o que fazer caso não seja.
+    tools:
+      # Tools nativas do kagent (já instaladas pelo Helm chart). Apenas leitura.
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: kagent-tool-server
+          toolNames:
+            - k8s_get_resources
+            - k8s_describe_resource
+            - k8s_get_pod_logs
+            - k8s_get_events
+      # Nossas tools, servidas pelo Spring Boot.
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: service-catalog-mcp
+          toolNames:
+            - list_services
+            - get_service_owner
+            - get_runbook
+            - check_change_freeze

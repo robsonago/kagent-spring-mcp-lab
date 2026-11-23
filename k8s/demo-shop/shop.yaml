@@ -1,0 +1,89 @@
+# Aplicações de demonstração. O checkout-api está QUEBRADO de propósito:
+# falta a chave PAYMENT_GATEWAY_URL no ConfigMap, então o Pod entra em CrashLoopBackOff.
+# O agente precisa descobrir isso pelos logs e cruzar com o runbook do catálogo.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkout-config
+  namespace: shop
+data:
+  LOG_LEVEL: INFO
+  # PAYMENT_GATEWAY_URL: ausente de propósito (use "make fix-demo" para corrigir)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-api
+  namespace: shop
+  labels:
+    app.kubernetes.io/name: checkout-api
+    team: payments
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: checkout-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: checkout-api
+        team: payments
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          envFrom:
+            - configMapRef:
+                name: checkout-config
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "INFO starting checkout-api v1.4.2"
+              echo "INFO loading configuration from ConfigMap checkout-config"
+              if [ -z "$PAYMENT_GATEWAY_URL" ]; then
+                echo "FATAL required environment variable PAYMENT_GATEWAY_URL is not set (expected in ConfigMap checkout-config)"
+                exit 1
+              fi
+              echo "INFO connected to payment gateway at $PAYMENT_GATEWAY_URL"
+              while true; do sleep 3600; done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-api
+  namespace: shop
+  labels:
+    app.kubernetes.io/name: cart-api
+    team: storefront
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cart-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cart-api
+        team: storefront
+    spec:
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'INFO cart-api ready'; while true; do sleep 3600; done"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi

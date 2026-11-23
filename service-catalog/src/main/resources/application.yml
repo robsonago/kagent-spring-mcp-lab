@@ -1,0 +1,94 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: service-catalog
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  ai:
+    mcp:
+      server:
+        name: service-catalog
+        version: 0.1.0
+        type: SYNC
+        # STATELESS: sem sessão em memória. Qualquer réplica atende qualquer requisição,
+        # então dá para escalar horizontalmente sem sticky session.
+        protocol: STATELESS
+        instructions: >
+          Catálogo de serviços da plataforma: donos, on-call, runbooks e janelas de
+          congelamento de mudanças. Todas as tools são somente leitura.
+        streamable-http:
+          mcp-endpoint: /mcp
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# ---------------------------------------------------------------------------
+# Dados do catálogo (num cenário real: Backstage, CMDB, banco de dados...)
+# ---------------------------------------------------------------------------
+catalog:
+  services:
+    - name: checkout-api
+      namespace: shop
+      tier: tier-1
+      description: Finaliza pedidos e integra com o gateway de pagamento.
+      owner:
+        team: payments
+        on-call: "Ana Souza (ana.souza@empresa.dev)"
+        slack-channel: "#payments-oncall"
+        escalation: "Ana Souza -> Tech Lead Payments (15 min) -> Head de Engenharia (30 min)"
+      runbooks:
+        - symptom: CrashLoopBackOff
+          steps:
+            - "Leia os logs do container anterior (previous) para achar a mensagem FATAL."
+            - "Se a mensagem citar PAYMENT_GATEWAY_URL, confira se a chave existe no ConfigMap checkout-config do namespace shop."
+            - "Corrija o ConfigMap (valor de homologação: http://payment-gateway.shop.svc.cluster.local:8080) e reinicie o Deployment com kubectl rollout restart."
+            - "Valide que o Pod fica Ready e que o log mostra 'connected to payment gateway'."
+        - symptom: latência alta
+          steps:
+            - "Verifique a latência do gateway de pagamento no dashboard 'Payments / Gateway'."
+            - "Se o gateway estiver saudável, verifique saturação de CPU do checkout-api e escale o HPA."
+    - name: cart-api
+      namespace: shop
+      tier: tier-2
+      description: Mantém o carrinho de compras do usuário.
+      owner:
+        team: storefront
+        on-call: "Bruno Lima (bruno.lima@empresa.dev)"
+        slack-channel: "#storefront"
+        escalation: "Bruno Lima -> Tech Lead Storefront (30 min)"
+      runbooks:
+        - symptom: OOMKilled
+          steps:
+            - "Confira o limite de memória do container e o uso real com kubectl top pod."
+            - "Se o uso for legítimo, aumente o limite em 25% e abra uma tarefa para investigar o consumo."
+    - name: service-catalog
+      namespace: catalog
+      tier: tier-3
+      description: Este serviço. Expõe o catálogo como MCP Server para os agentes.
+      owner:
+        team: platform
+        on-call: "Time Platform"
+        slack-channel: "#platform"
+        escalation: "Platform on-call (60 min)"
+      runbooks: []
+
+  # Edite as datas para testar o comportamento com congelamento ativo.
+  freezes:
+    - name: black-friday
+      start: "2026-11-26"
+      end: "2026-11-30"
+      reason: "Pico de vendas da Black Friday"
+    - name: fim-de-ano
+      start: "2026-12-18"
+      end: "2027-01-02"
+      reason: "Congelamento de fim de ano"

@@ -1,0 +1,30 @@
+# Valores do Helm chart do kagent para o laboratório.
+# O chart instala ~10 agentes de exemplo (Istio, Cilium, Argo...). Num kind local
+# eles só consomem memória, então mantemos apenas o k8s-agent e o tool server nativo.
+k8s-agent:
+  enabled: true
+
+kgateway-agent:
+  enabled: false
+istio-agent:
+  enabled: false
+promql-agent:
+  enabled: false
+observability-agent:
+  enabled: false
+argo-rollouts-agent:
+  enabled: false
+helm-agent:
+  enabled: false
+cilium-policy-agent:
+  enabled: false
+cilium-manager-agent:
+  enabled: false
+cilium-debug-agent:
+  enabled: false
+grafana-mcp:
+  enabled: false
+
+# Tool server nativo (k8s_get_resources, k8s_get_pod_logs...). Usado pelo nosso agente.
+kagent-tools:
+  enabled: true

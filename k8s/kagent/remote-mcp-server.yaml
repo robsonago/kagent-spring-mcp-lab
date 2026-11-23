@@ -1,0 +1,13 @@
+# Registra o MCP Server do Spring Boot no kagent.
+# O kagent chama tools/list nesse endereço e descobre as tools sozinho.
+apiVersion: kagent.dev/v1alpha2
+kind: RemoteMCPServer
+metadata:
+  name: service-catalog-mcp
+  namespace: kagent
+spec:
+  description: Catálogo de serviços (donos, on-call, runbooks, congelamento de mudanças)
+  protocol: STREAMABLE_HTTP
+  url: http://service-catalog.catalog.svc.cluster.local:8080/mcp
+  timeout: 30s
+  terminateOnClose: true
